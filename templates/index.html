@@ -1,0 +1,22 @@
+{# Наследуемся от base.html: берём его разметку и заполняем блоки #}
+{% extends "base.html" %}
+
+{% block title %}Врачи клиники{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Наши врачи</h1>
+
+<div class="list-group">
+    {# Цикл по списку doctors, который передали из app.py #}
+    {% for doctor in doctors %}
+        <div class="list-group-item">
+            {# {{ }} — вывод значения переменной в HTML #}
+            <h5 class="mb-1">{{ doctor.name }}</h5>
+            <p class="mb-1 text-muted">{{ doctor.specialty }}</p>
+        </div>
+    {% else %}
+        {# Ветка else выполняется, если список пустой #}
+        <p>Врачей пока нет.</p>
+    {% endfor %}
+</div>
+{% endblock %}

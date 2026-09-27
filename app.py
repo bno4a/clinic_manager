@@ -1,10 +1,11 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 
 app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///clinic.db"
+app.config["SECRET_KEY"] = "clinic-secret-key"
 
 db = SQLAlchemy(app)
 
@@ -56,8 +57,8 @@ with app.app_context():
 # ---------- МАРШРУТЫ ----------
 @app.route("/")
 def index():
-    doctors = Doctor.query.all()
-    return "<br>".join(f"{d.name} — {d.specialty}" for d in doctors)
+    doctors = Doctor.query.order_by(Doctor.name).all()
+    return render_template("index.html", doctors=doctors)
 
 
 if __name__ == "__main__":
