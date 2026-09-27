@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Регистрация</h1>
+
+{# method="post" — данные формы уйдут POST-запросом и попадут в request.form.
+   Атрибут name у каждого поля — это ключ в request.form #}
+<form method="post" style="max-width: 400px;">
+    <div class="mb-3">
+        <label class="form-label">Имя</label>
+        <input class="form-control" type="text" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Пароль</label>
+        <input class="form-control" type="password" name="password" required>
+    </div>
+    <button class="btn btn-primary" type="submit">Зарегистрироваться</button>
+</form>
+
+<p class="mt-3">Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+{% endblock %}
