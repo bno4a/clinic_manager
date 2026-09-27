@@ -9,11 +9,13 @@
 <div class="list-group">
     {# Цикл по списку doctors, который передали из app.py #}
     {% for doctor in doctors %}
-        <div class="list-group-item">
+        {# Каждая карточка — ссылка на страницу врача, например /doctor/1 #}
+        <a class="list-group-item list-group-item-action"
+           href="{{ url_for('doctor_page', doctor_id=doctor.id) }}">
             {# {{ }} — вывод значения переменной в HTML #}
             <h5 class="mb-1">{{ doctor.name }}</h5>
             <p class="mb-1 text-muted">{{ doctor.specialty }}</p>
-        </div>
+        </a>
     {% else %}
         {# Ветка else выполняется, если список пустой #}
         <p>Врачей пока нет.</p>

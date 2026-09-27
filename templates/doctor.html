@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{# super() вставляет содержимое блока title из base.html ("Клиника").
+   Получится заголовок вкладки: "Иванова Анна Петровна — Клиника" #}
+{% block title %}{{ doctor.name }} — {{ super() }}{% endblock %}
+
+{% block content %}
+<h1>{{ doctor.name }}</h1>
+<p class="text-muted">{{ doctor.specialty }}</p>
+<p>{{ doctor.description }}</p>
+
+<h4 class="mt-4">Выберите дату</h4>
+{# Форма с method="get": значение поля попадёт в адрес как ?date=2026-10-01,
+   а в Python мы прочитаем его через request.args #}
+<form method="get" class="d-flex gap-2 mb-4" style="max-width: 350px;">
+    {# value — выбранная дата, min — нельзя выбрать прошедший день #}
+    <input class="form-control" type="date" name="date"
+           value="{{ selected_date.isoformat() }}" min="{{ today.isoformat() }}">
+    <button class="btn btn-primary" type="submit">Показать</button>
+</form>
+
+<h4>Свободное время на {{ selected_date.strftime('%d.%m.%Y') }}</h4>
+<div class="d-flex flex-wrap gap-2">
+    {% for slot in free_slots %}
+        <span class="btn btn-outline-success disabled">{{ slot }}</span>
+    {% else %}
+        <p>На эту дату свободного времени нет.</p>
+    {% endfor %}
+</div>
+
+<p class="mt-4"><a href="{{ url_for('index') }}">← Ко всем врачам</a></p>
+{% endblock %}

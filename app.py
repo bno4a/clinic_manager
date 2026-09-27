@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required)
@@ -14,6 +16,9 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 login_manager.login_message = "Войдите, чтобы продолжить."
+
+# Фиксированное расписание приёма: одинаковые слоты для всех врачей на любой день
+SLOTS = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"]
 
 
 # ---------- МОДЕЛИ (таблицы БД) ----------
@@ -72,6 +77,34 @@ with app.app_context():
 def index():
     doctors = Doctor.query.order_by(Doctor.name).all()
     return render_template("index.html", doctors=doctors)
+
+
+# <int:doctor_id> — часть адреса, которая превращается в число и передаётся в функцию.
+# Например, /doctor/2 -> doctor_page(doctor_id=2)
+@app.route("/doctor/<int:doctor_id>")
+def doctor_page(doctor_id):
+    # Ищем врача по первичному ключу; если такого нет — страница 404 "Not Found"
+    doctor = db.get_or_404(Doctor, doctor_id)
+
+    # request.args — параметры из адреса после "?", например /doctor/2?date=2026-10-01.
+    # date.fromisoformat превращает строку "2026-10-01" в объект даты.
+    # Если параметра нет или он неправильный — ValueError, тогда берём сегодня.
+    try:
+        selected_date = date.fromisoformat(request.args.get("date", ""))
+    except ValueError:
+        selected_date = date.today()
+
+    # Все записи к этому врачу на выбранную дату
+    appointments = Appointment.query.filter_by(doctor_id=doctor.id,
+                                               date=selected_date).all()
+    # Занятое время — список строк вида "10:00"
+    booked_times = [a.time for a in appointments]
+    # Свободные слоты — те, которых нет среди занятых
+    free_slots = [slot for slot in SLOTS if slot not in booked_times]
+
+    # today нужен шаблону, чтобы запретить выбор прошедших дат в календаре
+    return render_template("doctor.html", doctor=doctor, today=date.today(),
+                           selected_date=selected_date, free_slots=free_slots)
 
 
 @app.route("/register", methods=["GET", "POST"])
