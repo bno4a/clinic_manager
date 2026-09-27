@@ -1,6 +1,6 @@
 from datetime import date
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required,
                          current_user)
@@ -143,6 +143,35 @@ def book(doctor_id):
     # Возвращаемся на страницу врача с той же датой
     return redirect(url_for("doctor_page", doctor_id=doctor.id,
                             date=selected_date.isoformat()))
+
+
+# Список записей текущего пациента
+@app.route("/my")
+@login_required
+def my_appointments():
+    # Берём только записи вошедшего пациента, сортируем по дате, затем по времени
+    appointments = (Appointment.query
+                    .filter_by(patient_id=current_user.id)
+                    .order_by(Appointment.date, Appointment.time)
+                    .all())
+    return render_template("my_appointments.html", appointments=appointments)
+
+
+@app.route("/cancel/<int:appointment_id>", methods=["POST"])
+@login_required
+def cancel(appointment_id):
+    appointment = db.get_or_404(Appointment, appointment_id)
+
+    # Проверка владельца: отменить можно только СВОЮ запись.
+    # Иначе любой вошедший мог бы подставить в адрес чужой id и удалить чужую запись.
+    # abort(403) — сразу прекращает обработку и возвращает ошибку 403 Forbidden ("доступ запрещён")
+    if appointment.patient_id != current_user.id:
+        abort(403)
+
+    db.session.delete(appointment)  # помечаем запись на удаление
+    db.session.commit()             # и сохраняем изменения в БД
+    flash("Запись отменена.")
+    return redirect(url_for("my_appointments"))
 
 
 @app.route("/register", methods=["GET", "POST"])

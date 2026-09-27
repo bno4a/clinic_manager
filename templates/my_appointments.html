@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Мои записи{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Мои записи</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Время</th>
+            <th>Врач</th>
+            <th>Специальность</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for appointment in appointments %}
+            <tr>
+                <td>{{ appointment.date.strftime('%d.%m.%Y') }}</td>
+                <td>{{ appointment.time }}</td>
+                {# appointment.doctor — поле, созданное backref="doctor" в модели Doctor.
+                   ORM сам достаёт врача по doctor_id #}
+                <td>{{ appointment.doctor.name }}</td>
+                <td>{{ appointment.doctor.specialty }}</td>
+                <td>
+                    {# Отмена — POST-форма, потому что она удаляет данные #}
+                    <form method="post" action="{{ url_for('cancel', appointment_id=appointment.id) }}">
+                        <button class="btn btn-outline-danger btn-sm" type="submit">Отменить</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">
+                    У вас пока нет записей. <a href="{{ url_for('index') }}">Выбрать врача</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

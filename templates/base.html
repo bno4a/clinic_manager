@@ -19,6 +19,7 @@
         <div>
             {% if current_user.is_authenticated %}
                 <span class="navbar-text text-white me-3">{{ current_user.name }}</span>
+                <a class="btn btn-outline-light btn-sm" href="{{ url_for('my_appointments') }}">Мои записи</a>
                 <a class="btn btn-light btn-sm" href="{{ url_for('logout') }}">Выйти</a>
             {% else %}
                 <a class="btn btn-light btn-sm" href="{{ url_for('login') }}">Вход</a>
