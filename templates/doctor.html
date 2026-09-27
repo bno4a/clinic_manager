@@ -20,9 +20,26 @@
 </form>
 
 <h4>Свободное время на {{ selected_date.strftime('%d.%m.%Y') }}</h4>
+{# Гостю подсказываем, что для записи нужно войти #}
+{% if not current_user.is_authenticated %}
+    <p><a href="{{ url_for('login') }}">Войдите</a>, чтобы записаться на приём.</p>
+{% endif %}
+
 <div class="d-flex flex-wrap gap-2">
     {% for slot in free_slots %}
-        <span class="btn btn-outline-success disabled">{{ slot }}</span>
+        {% if current_user.is_authenticated %}
+            {# Для каждого слота — своя маленькая POST-форма с одной кнопкой.
+               Дата и время передаются в скрытых полях (type="hidden")
+               и попадут в request.form["date"] и request.form["time"] #}
+            <form method="post" action="{{ url_for('book', doctor_id=doctor.id) }}">
+                <input type="hidden" name="date" value="{{ selected_date.isoformat() }}">
+                <input type="hidden" name="time" value="{{ slot }}">
+                <button class="btn btn-outline-success" type="submit">{{ slot }}</button>
+            </form>
+        {% else %}
+            {# Гость видит время, но нажать на него не может #}
+            <span class="btn btn-outline-secondary disabled">{{ slot }}</span>
+        {% endif %}
     {% else %}
         <p>На эту дату свободного времени нет.</p>
     {% endfor %}

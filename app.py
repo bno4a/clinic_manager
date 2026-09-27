@@ -2,7 +2,8 @@ from datetime import date
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required)
+from flask_login import (LoginManager, UserMixin, login_user, logout_user, login_required,
+                         current_user)
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -79,14 +80,11 @@ def index():
     return render_template("index.html", doctors=doctors)
 
 
-# <int:doctor_id> — часть адреса, которая превращается в число и передаётся в функцию.
-# Например, /doctor/2 -> doctor_page(doctor_id=2)
 @app.route("/doctor/<int:doctor_id>")
 def doctor_page(doctor_id):
     # Ищем врача по первичному ключу; если такого нет — страница 404 "Not Found"
     doctor = db.get_or_404(Doctor, doctor_id)
 
-    # request.args — параметры из адреса после "?", например /doctor/2?date=2026-10-01.
     # date.fromisoformat превращает строку "2026-10-01" в объект даты.
     # Если параметра нет или он неправильный — ValueError, тогда берём сегодня.
     try:
@@ -105,6 +103,46 @@ def doctor_page(doctor_id):
     # today нужен шаблону, чтобы запретить выбор прошедших дат в календаре
     return render_template("doctor.html", doctor=doctor, today=date.today(),
                            selected_date=selected_date, free_slots=free_slots)
+
+
+
+@app.route("/book/<int:doctor_id>", methods=["POST"])
+@login_required
+def book(doctor_id):
+    doctor = db.get_or_404(Doctor, doctor_id)
+
+    # Дата и время приходят из скрытых полей формы (request.form)
+    time = request.form["time"]
+    try:
+        selected_date = date.fromisoformat(request.form["date"])
+    except ValueError:
+        flash("Некорректная дата.")
+        return redirect(url_for("doctor_page", doctor_id=doctor.id))
+
+    # Данные формы можно подделать, поэтому проверяем их на сервере:
+    # дата не в прошлом, время — одно из разрешённых слотов
+    if selected_date < date.today() or time not in SLOTS:
+        flash("На это время записаться нельзя.")
+        return redirect(url_for("doctor_page", doctor_id=doctor.id))
+
+    # Проверяем, что слот свободен: нет записи к этому врачу на эту дату и время
+    # (пока пользователь смотрел страницу, слот мог занять кто-то другой)
+    busy = Appointment.query.filter_by(doctor_id=doctor.id, date=selected_date,
+                                       time=time).first()
+    if busy:
+        flash("Это время уже занято, выберите другое.")
+    else:
+        # current_user — вошедший пациент; его id сохраняем в записи
+        appointment = Appointment(patient_id=current_user.id, doctor_id=doctor.id,
+                                  date=selected_date, time=time)
+        db.session.add(appointment)
+        db.session.commit()
+        flash(f"Вы записаны к врачу {doctor.name} на "
+              f"{selected_date.strftime('%d.%m.%Y')} в {time}.")
+
+    # Возвращаемся на страницу врача с той же датой
+    return redirect(url_for("doctor_page", doctor_id=doctor.id,
+                            date=selected_date.isoformat()))
 
 
 @app.route("/register", methods=["GET", "POST"])
